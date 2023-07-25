@@ -83,7 +83,7 @@ Avista cupom com 2%
 
     // Retornar a mensagem do cupom juntamente com a participação de vendas pesquisas
     return 'VOCÊ acabou de ganhar um cupom de desconto para seu pedido!
-Adicione o código ' . $codigo_cupom . '_' . '' . $codigo_cupom . ' em sua compra e aproveite já!';
+Adicione o código ' . $codigo_cupom . ' em sua compra e aproveite já!';
 }
 
 // Chama a função para criar o cupom
