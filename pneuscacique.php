@@ -53,7 +53,7 @@ function adicionar_menu_pneus_cacique()
 {
     add_menu_page(
         'Pneus Cacique',
-        'Relatório Pesquisa x Vendas',
+        'Relatório de Vendas',
         'manage_options',
         'pneus-cacique',
         'exibir_pagina_relatorio_produtos',
@@ -247,9 +247,13 @@ function exibir_pagina_relatorio_produtos()
     $total_posts = $query->found_posts;
     $posts_per_page = 1;
     $total_pages = ceil($total_posts / $posts_per_page);
+    $current_page = max(1, intval($_GET['paged']));
+    $offset = ($current_page - 1) * $posts_per_page;
+    $query->set('posts_per_page', $posts_per_page);
+    $query->set('offset', $offset);
+    $query->query($query->query_vars);
 
     if ($total_pages >= 1) {
-        $current_page = max(1, get_query_var('paged'));
         echo '<nav aria-label="Page navigation">';
         echo '<ul class="pagination">';
         for ($i = 1; $i <= $total_pages; $i++) {
