@@ -30,10 +30,7 @@ function criar_tabela_relatorio_pneus_cacique()
         id INT AUTO_INCREMENT PRIMARY KEY,
         produto VARCHAR(255),
         negociacao INT,
-        participacao_vendas_pesquisas VARCHAR(255),
-        vendas INT NOT NULL DEFAULT 0,
-        pesquisas VARCHAR(191),
-        product_id VARCHAR(191)
+        participacao_vendas_pesquisas VARCHAR(255)
     );";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -159,22 +156,15 @@ function exibir_pagina_relatorio_produtos()
         exit;
     }
 
+    $post_per_page = 20;
+
     $args = array(
         'post_type' => 'product',
-        'posts_per_page' => -1,
+        'posts_per_page' => $post_per_page,
+        'paged' => max(1, intval($_GET['paged'])), // Use the paged parameter from $_GET
     );
 
     $query = new WP_Query($args);
-    // Paginação
-    $total_posts = $query->found_posts;
-    $posts_per_page = 2;
-    $total_pages = ceil($total_posts / $posts_per_page);
-    $current_page = max(1, intval($_GET['paged']));
-    $offset = ($current_page - 1) * $posts_per_page;
-    $query->set('posts_per_page', $posts_per_page);
-    $query->set('offset', $offset);
-    $query->query($query->query_vars);
-
     echo '<h2>Relatório de Produtos (Pesquisas x Vendas x Negociação)</h2>';
     echo '<h6>Este relatório demonstra a quantidade de vezes em que o produto foi procurado pelo cliente (campo Pesquisas), quantas vendas foram concluídas (campo Vendas), a quantidade de negociações realizadas (campo Negociação) e a relação de porcentagem Vendas/Pesquisas e Negociação/Pesquisas (campo Participação Vendas x Pesquisas e Participação Negociação x Pesquisas).</h6>';
 
@@ -271,19 +261,23 @@ function exibir_pagina_relatorio_produtos()
 
     echo '</tbody>';
     echo '</table>';
+    $total_posts = $query->found_posts;
+    $total_pages = ceil($total_posts / $post_per_page);
+    $current_page = max(1, intval($_GET['paged']));
 
     if ($total_pages >= 1) {
         echo '<nav aria-label="Page navigation">';
         echo '<ul class="pagination">';
         for ($i = 1; $i <= $total_pages; $i++) {
+            // Update pagination link to include the paged parameter
+            $pagination_url = esc_url(add_query_arg('paged', $i, admin_url('admin.php?page=pneus-cacique')));
             echo '<li class="page-item' . ($i === $current_page ? ' active' : '') . '">';
-            echo '<a class="page-link" href="?page=pneus-cacique&paged=' . $i . '">' . $i . '</a>';
+            echo '<a class="page-link" href="' . $pagination_url . '">' . $i . '</a>';
             echo '</li>';
         }
         echo '</ul>';
         echo '</nav>';
     }
-
     wp_reset_postdata();
 }
 

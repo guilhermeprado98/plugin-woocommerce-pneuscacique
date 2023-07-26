@@ -11,6 +11,7 @@ require_once '../../../wp-load.php';
    <title>CUPOM DE DESCONTO</title>
    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
    <link rel="stylesheet" href="include/css/bootstrap.min.css">
+   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
 
    <style>
    body {
@@ -127,8 +128,20 @@ if (isset($_GET['produto'])) {
             },
             success: function(response) {
 
-               alert(response);
-               window.close();
+               Swal.fire({
+                  icon: 'success',
+                  title: 'Success!',
+                  html: response,
+                  confirmButtonText: 'OK'
+               }).then((result) => {
+
+                  if (result.isConfirmed) {
+
+                     Swal.close();
+                     window.close();
+                  }
+               });
+
             },
             error: function(xhr, status, error) {
 
