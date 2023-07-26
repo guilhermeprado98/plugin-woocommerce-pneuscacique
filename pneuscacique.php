@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: CUPOM Pneus Cacique
-Description: Personalizações de CUPOM de desconto. TESTE
+Description: Personalizações de CUPOM de desconto e Relatório de Vendas.
 Version: 1.0
 Author: Guilherme Prado
  */
