@@ -149,6 +149,11 @@ function obter_quantidade_negociacoes_produto($product_name)
 
 function exibir_pagina_relatorio_produtos()
 {
+    if (isset($_GET['pesquisar_produtos'])) {
+        $search_query = sanitize_text_field($_GET['pesquisar_produtos']);
+    } else {
+        $search_query = '';
+    }
 
     if (isset($_GET['atualizar_relatorio'])) {
 
@@ -161,7 +166,8 @@ function exibir_pagina_relatorio_produtos()
     $args = array(
         'post_type' => 'product',
         'posts_per_page' => $post_per_page,
-        'paged' => max(1, intval($_GET['paged'])), // Use the paged parameter from $_GET
+        'paged' => max(1, intval($_GET['paged'])),
+        's' => $search_query, // Use the paged parameter from $_GET
     );
 
     $query = new WP_Query($args);
@@ -170,7 +176,9 @@ function exibir_pagina_relatorio_produtos()
 
     echo '<form method="get" action="">';
     echo '<input type="hidden" name="page" value="pneus-cacique">';
-    echo '<input type="submit" style="margin-bottom: 10px" name="atualizar_relatorio" value="Atualizar Relatório" class="btn btn-primary">';
+    echo '<input type="text" name="pesquisar_produtos" placeholder="Pesquisar por nome..." style="margin-right:10px"; value="' . esc_attr($search_query) . '">';
+    echo '<input type="submit" style="margin-bottom: 10px; margin-right: 10px" name="atualizar_relatorio" value="Atualizar Relatório" class="btn btn-primary">';
+    echo '<input type="submit" name="pesquisar" style="margin-bottom: 10px;" value="Pesquisar Produto" class="btn btn-primary">';
     echo '</form>';
 
     echo '<table class="table table-bordered">';

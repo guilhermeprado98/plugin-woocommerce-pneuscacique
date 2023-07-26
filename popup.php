@@ -88,7 +88,7 @@ require_once '../../../wp-load.php';
          <label class="input-group-text" for="inputGroupSelect01" id="selecione-pagamento">Selecione a forma de
             pagamento</label>
       </div>
-      <select class="custom-select" id="cupom-select" style="margin-top:10px">
+      <select class="form-select" id="cupom-select" style="margin-top:10px">
          <option value="avista">À vista</option>
          <option value="4vezes">4 vezes</option>
          <option value="8vezes">8 vezes</option>
@@ -127,20 +127,31 @@ if (isset($_GET['produto'])) {
 
             },
             success: function(response) {
+               console.log(response);
 
-               Swal.fire({
-                  icon: 'success',
-                  title: 'Success!',
-                  html: response,
-                  confirmButtonText: 'OK'
-               }).then((result) => {
+               if (response.trim() == "https://www.pneuscacique.com.br/negociar-precos-e-prazos") {
+                  window.addEventListener("beforeunload", function() {
+                     window.opener.location.href = response + '?producttitle=' +
+                        encodeURIComponent(nomeProduto) + '&productsku=' +
+                        encodeURIComponent(skuProduto);
+                  });
+                  window.close();
+               } else {
+                  Swal.fire({
+                     icon: 'success',
+                     title: 'CUPOM GERADO COM SUCESSO!',
+                     html: response,
+                     confirmButtonText: 'OK'
+                  }).then((result) => {
 
-                  if (result.isConfirmed) {
+                     if (result.isConfirmed) {
 
-                     Swal.close();
-                     window.close();
-                  }
-               });
+                        Swal.close();
+                        window.close();
+                     }
+                  });
+
+               }
 
             },
             error: function(xhr, status, error) {

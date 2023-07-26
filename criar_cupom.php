@@ -57,9 +57,7 @@ Avista cupom com 2%
     } elseif ($participacao_vendas_pesquisas >= 70 && $_POST['valor'] == '4vezes') {
         $desconto = 1;
     } else {
-
-        $url = "https://pneuscacique.com.br/negociar-precos-e-prazos?producttitle={$produto}&productsku={$sku}";
-        wp_redirect($url);
+        return 'https://www.pneuscacique.com.br/negociar-precos-e-prazos';
     }
 
     $tipo_desconto = 'percent';
@@ -76,9 +74,9 @@ Avista cupom com 2%
 
     $cupom->save();
 
-    $codigo_cupom_with_sku = $codigo_cupom . '_' . $sku;
+    $codigo_cupom_with_sku = $codigo_cupom . '' . $sku;
 
-    $return_message = 'VOCÊ acabou de ganhar um cupom de desconto para seu pedido! Adicione o código <a href="#"> ' . $codigo_cupom_with_sku . '</a> em sua compra e aproveite já!';
+    $return_message = 'VOCÊ acabou de ganhar um cupom de desconto para seu pedido! Adicione o código <a href="teste"> ' . $codigo_cupom_with_sku . '</a> em sua compra e aproveite já!';
 
     return $return_message;
 }
