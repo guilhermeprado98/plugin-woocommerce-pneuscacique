@@ -1,6 +1,7 @@
 <?php
 global $product;
 require_once '../../../wp-load.php';
+
 ?>
 
 <!DOCTYPE html>
@@ -9,6 +10,7 @@ require_once '../../../wp-load.php';
 <head>
    <title>CUPOM DE DESCONTO</title>
    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   <link rel="stylesheet" href="include/css/bootstrap.min.css">
 
    <style>
    body {
@@ -43,6 +45,20 @@ require_once '../../../wp-load.php';
          background: linear-gradient(19deg, #299aa7 0%, #16c396 62%);
       }
    }
+
+
+   /* Media query for desktops with a minimum width of 768px */
+   @media (min-width: 500px) {
+      #continue-atendimento {
+         margin-bottom: 10px !important;
+
+      }
+
+      #selecione-pagamento {
+         margin-top: 10px;
+         margin-right: 10px;
+      }
+   }
    </style>
 </head>
 
@@ -55,49 +71,58 @@ require_once '../../../wp-load.php';
          queira ativar o CUPOM DE DESCONTO
          para sua compra, clique em "Adquirir CUPOM DE DESCONTO"</p>
 
-      <button id="criar-cupom">Adquirir CUPOM DE DESCONTO</button>
+      <button id="criar-cupom" class="btn btn-success"><b>Adquirir CUPOM DE DESCONTO</b><b></button>
 
-      <a href="https://pneuscacique.com.br/negociar-precos-e-prazos?producttitle=PNEU 215/55R18 WRANGLER TERRITORY HT 95 V&amp;productsku=110313"
+      <a href="https://pneuscacique.com.br/negociar-precos-e-prazos?producttitle=<?php echo $_GET['produto']; ?>&productsku=<?php echo $_GET['sku']; ?>"
          id="continue-atendimento-link">
-         <button id="continue-atendimento">Continue com o atendimento</button>
+         <button id="continue-atendimento" class="btn btn-warning"
+            style="margin-top:10px; color: white !important;"><b>Continue com o
+               atendimento</b></button>
       </a>
    </center>
 
    <!-- Pop-up do select -->
-   <div id="select-popup" style="display: none;">
-      <h2>Selecione sua opção de pagamento:</h2>
-      <select id="cupom-select">
+   <div class="input-group mb-3" id="select-popup" style="display: none; margin-top: 30px; margin-right: 5px">
+      <div class="input-group-prepend">
+         <label class="input-group-text" for="inputGroupSelect01" id="selecione-pagamento">Selecione a forma de
+            pagamento</label>
+      </div>
+      <select class="custom-select" id="cupom-select" style="margin-top:10px">
          <option value="avista">À vista</option>
          <option value="4vezes">4 vezes</option>
          <option value="8vezes">8 vezes</option>
       </select>
-      <button id="enviar-select">GERAR CUPOM</button>
+      <button id="enviar-select" class="btn btn-primary" style="margin-left: 13px; margin-top:10px"><b>GERAR
+            CUPOM</b></button>
    </div>
 
    <script>
    jQuery(document).ready(function($) {
-      // Abrir o pop-up do select quando clicar no botão "Adquirir CUPOM DE DESCONTO"
+
       $("#criar-cupom").click(function() {
          $("#select-popup").show();
       });
 
-      // Enviar o valor selecionado via AJAX para o arquivo criar_cupom.php
+
       $("#enviar-select").click(function() {
          <?php
-// Verifica se o parâmetro 'produto' foi passado na URL
+
 if (isset($_GET['produto'])) {
     $nome_produto = $_GET['produto'];
+    $sku = $_GET['sku'];
 
 }
 ?>
          var valorSelect = $("#cupom-select").val();
          var nomeProduto = "<?php echo $nome_produto; ?>";
+         var skuProduto = "<?php echo $sku; ?>";
          $.ajax({
             url: "criar_cupom.php",
             method: "POST",
             data: {
                valor: valorSelect,
-               produto: nomeProduto
+               produto: nomeProduto,
+               sku: skuProduto
 
             },
             success: function(response) {
@@ -112,15 +137,15 @@ if (isset($_GET['produto'])) {
          });
       });
 
-      // Redirecionar para a página pai quando clicar em "Continue com o atendimento"
+
       document.getElementById("continue-atendimento-link").addEventListener("click", function(e) {
-         e.preventDefault(); // Evita o comportamento padrão do link
+         e.preventDefault();
          var href = this.getAttribute("href");
          if (href) {
             window.addEventListener("beforeunload", function() {
-               window.opener.location.href = href; // Redireciona a página pai
+               window.opener.location.href = href;
             });
-            window.close(); // Fecha o pop-up
+            window.close();
          }
       });
    });

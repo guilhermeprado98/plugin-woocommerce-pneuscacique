@@ -8,8 +8,8 @@ function criar_cupom()
     global $wpdb;
 
     $table_name = $wpdb->prefix . 'relatoriopneuscacique';
-
     $produto = $_POST['produto'];
+    $sku = $_POST['sku'];
 
     $participacao_vendas_pesquisas = $wpdb->get_var(
         $wpdb->prepare(
@@ -57,37 +57,32 @@ Avista cupom com 2%
     } elseif ($participacao_vendas_pesquisas >= 70 && $_POST['valor'] == '4vezes') {
         $desconto = 1;
     } else {
-        //COLOCAR AQUI A PAGINA DE ATENDIMENTO QUANDO ESTIVER EM HOMOLOGAÇÃO
-        header("Location: https://pneuscacique.com.br");
+
+        $url = "https://pneuscacique.com.br/negociar-precos-e-prazos?producttitle={$produto}&productsku={$sku}";
+        wp_redirect($url);
     }
 
-// Defina o valor do desconto em porcentagem
-    $tipo_desconto = 'percent'; // Pode ser 'percent' ou 'fixed_cart'
+    $tipo_desconto = 'percent';
 
-    // Cria um novo objeto de cupom
     $cupom = new WC_Coupon();
 
-    // Define o código do cupom
     $cupom->set_code($codigo_cupom);
 
-    // Define o tipo de desconto e o valor
     $cupom->set_discount_type($tipo_desconto);
     $cupom->set_amount($desconto);
 
-    // Define a data de expiração (24 horas a partir do momento atual)
     $expira_em = date('Y-m-d H:i:s', strtotime('+24 hours'));
     $cupom->set_date_expires($expira_em);
 
-    // Salva o cupom
     $cupom->save();
 
-    // Retornar a mensagem do cupom juntamente com a participação de vendas pesquisas
-    return 'VOCÊ acabou de ganhar um cupom de desconto para seu pedido!
-Adicione o código ' . $codigo_cupom . ' em sua compra e aproveite já!';
+    $codigo_cupom_with_sku = $codigo_cupom . '_' . $sku;
+
+    $return_message = 'VOCÊ acabou de ganhar um cupom de desconto para seu pedido! Adicione o código <a href="#"> ' . $codigo_cupom_with_sku . '</a> em sua compra e aproveite já!';
+
+    return $return_message;
 }
 
-// Chama a função para criar o cupom
 $resultado = criar_cupom();
 
-// Retorna a resposta
 echo $resultado;

@@ -1,20 +1,25 @@
-<head>
-
-   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"
-      integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
-   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
-      integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous">
-   </script>
-</head>
-
-
 <?php
 /*
 Plugin Name: CUPOM Pneus Cacique
-Description: Personalizações de CUPOM de desconto.
+Description: Personalizações de CUPOM de desconto. TESTE
 Version: 1.0
 Author: Guilherme Prado
  */
+
+function include_bootstrap()
+{
+    if (isset($_GET['page']) && $_GET['page'] === 'pneus-cacique') {
+
+        wp_enqueue_style('bootstrap', plugin_dir_url(__FILE__) . '/include/css/bootstrap.min.css', array(), '4.3.1');
+    }
+}
+
+add_action('admin_enqueue_scripts', 'include_bootstrap', 99999);
+
+?>
+
+
+<?php
 
 function criar_tabela_relatorio_pneus_cacique()
 {
@@ -25,7 +30,10 @@ function criar_tabela_relatorio_pneus_cacique()
         id INT AUTO_INCREMENT PRIMARY KEY,
         produto VARCHAR(255),
         negociacao INT,
-        participacao_vendas_pesquisas VARCHAR(255)
+        participacao_vendas_pesquisas VARCHAR(255),
+        vendas INT NOT NULL DEFAULT 0,
+        pesquisas VARCHAR(191),
+        product_id VARCHAR(191)
     );";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -83,35 +91,27 @@ function atualizar_vendas_produto($order_id, $order)
     foreach ($order->get_items() as $item_data) {
         $nome_produto = $item_data->get_name();
         $quantidade = $item_data->get_quantity();
-
-        $wpdb->query(
-            $wpdb->prepare(
-                "UPDATE wp_relatoriopneuscacique SET vendas = vendas + %d WHERE produto = %s",
-                $quantidade,
-                $nome_produto
-            )
-        );
+        file_put_contents('teste.txt', $quantidade);
+        if ($quantidade == 0) {
+            $wpdb->query(
+                $wpdb->prepare(
+                    "UPDATE wp_relatoriopneuscacique SET vendas = 1 WHERE produto = %s",
+                    $quantidade,
+                    $nome_produto
+                )
+            );
+        } else {
+            $wpdb->query(
+                $wpdb->prepare(
+                    "UPDATE wp_relatoriopneuscacique SET vendas = vendas + %d WHERE produto = %s",
+                    $quantidade,
+                    $nome_produto
+                )
+            );
+        }
     }
 }
 
-function atualizar_numero_vendas()
-{
-    global $wpdb;
-    global $product;
-
-    $product_name = $product->get_name();
-    // Obtenha o valor atualizado de vendas após a atualização para o primeiro produto
-    $nova_quantidade_vendas = $wpdb->get_var(
-        $wpdb->prepare("
-            SELECT vendas
-            FROM {$wpdb->prefix}relatoriopneuscacique
-            WHERE produto = %s
-        ", $product_name)
-    );
-
-    // Retorne o novo valor de vendas do primeiro produto (pode ser personalizado conforme necessário)
-    return $nova_quantidade_vendas;
-}
 add_action('woocommerce_new_order', 'atualizar_vendas_produto', 1, 2);
 
 function obter_quantidade_pedidos_produto($product_id)
@@ -120,7 +120,7 @@ function obter_quantidade_pedidos_produto($product_id)
     global $product;
 
     $product_name = $product->get_name();
-    // Obtenha o valor atualizado de vendas após a atualização para o primeiro produto
+
     $nova_quantidade_vendas = $wpdb->get_var(
         $wpdb->prepare("
             SELECT vendas
@@ -129,7 +129,6 @@ function obter_quantidade_pedidos_produto($product_id)
         ", $product_name)
     );
 
-    // Retorne o novo valor de vendas do primeiro produto (pode ser personalizado conforme necessário)
     return $nova_quantidade_vendas;
 }
 
@@ -166,9 +165,18 @@ function exibir_pagina_relatorio_produtos()
     );
 
     $query = new WP_Query($args);
+    // Paginação
+    $total_posts = $query->found_posts;
+    $posts_per_page = 2;
+    $total_pages = ceil($total_posts / $posts_per_page);
+    $current_page = max(1, intval($_GET['paged']));
+    $offset = ($current_page - 1) * $posts_per_page;
+    $query->set('posts_per_page', $posts_per_page);
+    $query->set('offset', $offset);
+    $query->query($query->query_vars);
 
-    echo '<h1>Relatório de Produtos (Pesquisas x Vendas x Negociação)</h1>';
-    echo '<h4>Este relatório demonstra a quantidade de vezes em que o produto foi procurado pelo cliente (campo Pesquisas), quantas vendas foram concluídas (campo Vendas), a quantidade de negociações realizadas (campo Negociação) e a relação de porcentagem Vendas/Pesquisas e Negociação/Pesquisas (campo Participação Vendas x Pesquisas e Participação Negociação x Pesquisas).</h4>';
+    echo '<h2>Relatório de Produtos (Pesquisas x Vendas x Negociação)</h2>';
+    echo '<h6>Este relatório demonstra a quantidade de vezes em que o produto foi procurado pelo cliente (campo Pesquisas), quantas vendas foram concluídas (campo Vendas), a quantidade de negociações realizadas (campo Negociação) e a relação de porcentagem Vendas/Pesquisas e Negociação/Pesquisas (campo Participação Vendas x Pesquisas e Participação Negociação x Pesquisas).</h6>';
 
     echo '<form method="get" action="">';
     echo '<input type="hidden" name="page" value="pneus-cacique">';
@@ -186,6 +194,7 @@ function exibir_pagina_relatorio_produtos()
     echo '<th scope="col">Participação Negociação x Pesquisas</th>';
     echo '</tr>';
     echo '</thead>';
+    echo '<tbody>';
 
     while ($query->have_posts()) {
         global $product;
@@ -193,22 +202,42 @@ function exibir_pagina_relatorio_produtos()
         $product_id = get_the_ID();
         $product_name = get_the_title();
 
-        // Obter o número de vezes que o produto foi pesquisado
         $numero_pesquisas = get_post_meta($product_id, 'woocommerce_views', true);
 
-        // Obter o número de vezes que o produto foi vendido
         $numero_vendas = obter_quantidade_pedidos_produto($product_id);
 
-        // Obter a quantidade de negociações realizadas
         $quantidade_negociacao = obter_quantidade_negociacoes_produto($product_name);
 
-        // Calcular o percentual de vendas
         $percentual_vendas = 0;
         if ($numero_pesquisas > 0) {
             $percentual_vendas = ($numero_vendas / $numero_pesquisas) * 100;
         }
 
         global $wpdb;
+
+        global $wpdb;
+        $nome_tabela = $wpdb->prefix . 'relatoriopneuscacique';
+        $product_name = get_the_title();
+
+        $existe_produto = $wpdb->get_var(
+            $wpdb->prepare("
+                SELECT COUNT(*)
+                FROM $nome_tabela
+                WHERE produto = %s
+            ", $product_name)
+        );
+
+        if ($existe_produto) {
+        } else {
+
+            $wpdb->update(
+                $nome_tabela,
+                array('Produto' => $product_name),
+                array('Negociacao' => 0),
+                array('vendas' => 0),
+                array('%s')
+            );
+        }
 
         $table_name = $wpdb->prefix . 'relatoriopneuscacique';
 
@@ -218,7 +247,7 @@ function exibir_pagina_relatorio_produtos()
         $data_format = array(
             '%d',
         );
-        // Condições para o WHERE
+
         $where = array(
             'produto' => $product_name,
         );
@@ -226,7 +255,7 @@ function exibir_pagina_relatorio_produtos()
         $wpdb->update($table_name, $data, $where, $data_format);
 
         $percentual_negociacao = 0;
-        if ($numero_pesquisas > 0) {
+        if ($numero_pesquisas > 0 && $quantidade_negociacao != 0) {
             $percentual_negociacao = ($numero_vendas / $quantidade_negociacao) * 100;
         }
 
@@ -242,16 +271,6 @@ function exibir_pagina_relatorio_produtos()
 
     echo '</tbody>';
     echo '</table>';
-
-    // Paginação
-    $total_posts = $query->found_posts;
-    $posts_per_page = 1;
-    $total_pages = ceil($total_posts / $posts_per_page);
-    $current_page = max(1, intval($_GET['paged']));
-    $offset = ($current_page - 1) * $posts_per_page;
-    $query->set('posts_per_page', $posts_per_page);
-    $query->set('offset', $offset);
-    $query->query($query->query_vars);
 
     if ($total_pages >= 1) {
         echo '<nav aria-label="Page navigation">';
