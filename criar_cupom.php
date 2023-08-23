@@ -11,6 +11,20 @@ function criar_cupom()
     $produto = $_POST['produto'];
     $sku = $_POST['sku'];
 
+    $product_id = wc_get_product_id_by_sku($sku);
+
+    if ($product_id) {
+        // Verificar se o produto já está no carrinho
+        $cart = WC()->cart;
+        $cart_item_key = $cart->find_product_in_cart($product_id);
+
+        if (!$cart_item_key) {
+            // Adicionar o produto ao carrinho se ainda não estiver lá
+            $cart->add_to_cart($product_id);
+
+        }
+    }
+
     $participacao_vendas_pesquisas = $wpdb->get_var(
         $wpdb->prepare(
             "SELECT participacao_vendas_pesquisas
@@ -19,26 +33,8 @@ function criar_cupom()
             $produto
         )
     );
-/*
 
-➡Participação 0 a 35%
-Avista cupom com 4%
-4 vezes cupom com 3%
-8 vezes cupom com 2%
-
-➡Participação 36 a 70%
-Avista cupom com 3%
-4 vezes cupom com 2%
-8 vezes cupom com 1%
-
-➡Participação acima de 70%
-Avista cupom com 2%
-4 vezes cupom com 1%
-8 vezes falar com atendente
- */
-
-    //COLOCAR AS CONDIÇÕES SOBRE A PARTICIPACAO AQUI, PARA SETAR OS DESCONTOS
-    $codigo_cupom = 'COMPREAGORA'; // Defina o código do cupom desejado
+    $codigo_cupom = 'compre-agora-' . $sku . '';
 
     if ($participacao_vendas_pesquisas >= 0 && $participacao_vendas_pesquisas <= 35 && $_POST['valor'] == 'avista') {
         $desconto = 4;
@@ -74,9 +70,16 @@ Avista cupom com 2%
 
     $cupom->save();
 
-    $codigo_cupom_with_sku = $codigo_cupom . '' . $sku;
+    $codigo_cupom_with_sku = 'compre-agora-' . $sku . '';
 
-    $return_message = 'VOCÊ acabou de ganhar um cupom de desconto para seu pedido! Adicione o código <a href="teste"> ' . $codigo_cupom_with_sku . '</a> em sua compra e aproveite já!';
+    $applied_coupons = WC()->cart->get_applied_coupons();
+
+    if (empty($applied_coupons)) {
+        WC()->cart->apply_coupon($codigo_cupom_with_sku);
+    }
+
+    $return_message = 'O cupom de desconto <span id="cupom-code" style="font-size: 30px;">
+    ' . $codigo_cupom_with_sku . '</span> foi aplicado automaticamente ao seu carrinho!!';
 
     return $return_message;
 }

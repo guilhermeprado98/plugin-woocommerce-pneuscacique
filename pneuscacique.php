@@ -30,7 +30,8 @@ function criar_tabela_relatorio_pneus_cacique()
         id INT AUTO_INCREMENT PRIMARY KEY,
         produto VARCHAR(255),
         negociacao INT,
-        participacao_vendas_pesquisas VARCHAR(255)
+        participacao_vendas_pesquisas VARCHAR(255),
+        vendas INT DEFAULT 0
     );";
 
     require_once ABSPATH . 'wp-admin/includes/upgrade.php';
@@ -38,6 +39,33 @@ function criar_tabela_relatorio_pneus_cacique()
 }
 
 register_activation_hook(__FILE__, 'criar_tabela_relatorio_pneus_cacique');
+
+// Função para verificar e adicionar colunas à tabela
+function verificar_e_adicionar_colunas()
+{
+    global $wpdb;
+
+    $tabela = $wpdb->prefix . 'relatoriopneuscacique';
+
+    $coluna1 = 'criar_cupom_count';
+    $coluna2 = 'continue_atendimento_count';
+
+    $colunas_existentes = $wpdb->get_col("DESCRIBE $tabela", 0);
+
+    if (!in_array($coluna1, $colunas_existentes)) {
+
+        $wpdb->query("ALTER TABLE $tabela ADD $coluna1 int(11) DEFAULT 0");
+    }
+
+    if (!in_array($coluna2, $colunas_existentes)) {
+
+        $wpdb->query("ALTER TABLE $tabela ADD $coluna2 int(11) DEFAULT 0");
+    }
+
+}
+
+// Hook para executar a função ao iniciar o WordPress
+add_action('init', 'verificar_e_adicionar_colunas');
 
 function adicionar_botao_pagina_produto()
 {
@@ -52,7 +80,7 @@ function adicionar_botao_pagina_produto()
         }
     }
 }
-add_action('woocommerce_single_product_summary', 'adicionar_botao_pagina_produto', 25);
+add_action('woocommerce_after_add_to_cart_button', 'adicionar_botao_pagina_produto', 998);
 
 function adicionar_menu_pneus_cacique()
 {
@@ -88,12 +116,11 @@ function atualizar_vendas_produto($order_id, $order)
     foreach ($order->get_items() as $item_data) {
         $nome_produto = $item_data->get_name();
         $quantidade = $item_data->get_quantity();
-        file_put_contents('teste.txt', $quantidade);
+
         if ($quantidade == 0) {
             $wpdb->query(
                 $wpdb->prepare(
                     "UPDATE wp_relatoriopneuscacique SET vendas = 1 WHERE produto = %s",
-                    $quantidade,
                     $nome_produto
                 )
             );
@@ -109,24 +136,29 @@ function atualizar_vendas_produto($order_id, $order)
     }
 }
 
-add_action('woocommerce_new_order', 'atualizar_vendas_produto', 1, 2);
+add_action('woocommerce_new_order', 'atualizar_vendas_produto', 10, 2);
 
 function obter_quantidade_pedidos_produto($product_id)
 {
+
+    $today = date('Y-m-d');
+    $thirty_days_ago = date('Y-m-d', strtotime('-30 days'));
+
     global $wpdb;
-    global $product;
 
-    $product_name = $product->get_name();
-
-    $nova_quantidade_vendas = $wpdb->get_var(
-        $wpdb->prepare("
-            SELECT vendas
-            FROM {$wpdb->prefix}relatoriopneuscacique
-            WHERE produto = %s
-        ", $product_name)
+    $query = $wpdb->prepare(
+        "SELECT SUM(opl.product_qty)
+        FROM {$wpdb->prefix}wc_order_product_lookup as opl
+        INNER JOIN {$wpdb->prefix}posts as p
+        ON opl.order_id = p.ID
+        WHERE opl.product_id = %d
+        AND p.post_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)",
+        $product_id
     );
 
-    return $nova_quantidade_vendas;
+    $total_sales_last_30_days = $wpdb->get_var($query);
+
+    return $total_sales_last_30_days;
 }
 
 function obter_quantidade_negociacoes_produto($product_name)
@@ -190,6 +222,8 @@ function exibir_pagina_relatorio_produtos()
     echo '<th scope="col">Negociação</th>';
     echo '<th scope="col">Participação Vendas x Pesquisas</th>';
     echo '<th scope="col">Participação Negociação x Pesquisas</th>';
+    echo '<th scope="col">Geraram CUPOM</th>';
+    echo '<th scope="col">Continuaram atendimento</th>';
     echo '</tr>';
     echo '</thead>';
     echo '<tbody>';
@@ -254,8 +288,24 @@ function exibir_pagina_relatorio_produtos()
 
         $percentual_negociacao = 0;
         if ($numero_pesquisas > 0 && $quantidade_negociacao != 0) {
-            $percentual_negociacao = ($numero_vendas / $quantidade_negociacao) * 100;
+            $percentual_negociacao = ($quantidade_negociacao / $numero_pesquisas) * 100;
         }
+
+        $count_criar_cupom = $wpdb->get_var(
+            $wpdb->prepare("
+                SELECT criar_cupom_count
+                FROM $table_name
+                WHERE produto = %s
+            ", $product_name)
+        );
+
+        $count_continuar_atendimento = $wpdb->get_var(
+            $wpdb->prepare("
+                SELECT continue_atendimento_count
+                FROM $table_name
+                WHERE produto = %s
+            ", $product_name)
+        );
 
         echo '<tr>';
         echo '<td>' . get_the_title() . '</td>';
@@ -264,6 +314,8 @@ function exibir_pagina_relatorio_produtos()
         echo '<td>' . $quantidade_negociacao . '</td>';
         echo '<td>' . ceil($percentual_vendas) . '%</td>';
         echo '<td>' . ceil($percentual_negociacao) . '%</td>';
+        echo '<td>' . $count_criar_cupom . '</td>';
+        echo '<td>' . $count_continuar_atendimento . '</td>';
         echo '</tr>';
     }
 

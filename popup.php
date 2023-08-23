@@ -29,7 +29,7 @@ require_once '../../../wp-load.php';
       font-size: 16px;
    }
 
-   a.form-cap {
+   a.form-cap_popup {
       border-radius: 40px;
       font-size: 15px;
       color: white !important;
@@ -38,7 +38,7 @@ require_once '../../../wp-load.php';
    }
 
    @media (min-width: 208px) {
-      a.form-cap {
+      a.form-cap_popup {
          border-radius: 40px;
          font-size: 15px;
          color: white !important;
@@ -69,7 +69,7 @@ require_once '../../../wp-load.php';
       <h1>VOCÊ ACABOU DE GANHAR UM CUPOM DE DESCONTO!</h1>
       <p>Caso queira continuar o atendimento com um de nossos consultores, clique em "Continue com o atendimento",
          caso
-         queira ativar o CUPOM DE DESCONTO
+         queira gerar o CUPOM DE DESCONTO
          para sua compra, clique em "Adquirir CUPOM DE DESCONTO"</p>
 
       <button id="criar-cupom" class="btn btn-success"><b>Adquirir CUPOM DE DESCONTO</b><b></button>
@@ -101,7 +101,12 @@ require_once '../../../wp-load.php';
    jQuery(document).ready(function($) {
 
       $("#criar-cupom").click(function() {
+         sendButtonClickData("criar-cupom");
          $("#select-popup").show();
+      });
+      $("#continue-atendimento").click(function() {
+         sendButtonClickData("continue-atendimento");
+
       });
 
 
@@ -124,7 +129,6 @@ if (isset($_GET['produto'])) {
                valor: valorSelect,
                produto: nomeProduto,
                sku: skuProduto
-
             },
             success: function(response) {
                console.log(response);
@@ -139,28 +143,45 @@ if (isset($_GET['produto'])) {
                } else {
                   Swal.fire({
                      icon: 'success',
-                     title: 'CUPOM GERADO COM SUCESSO!',
+                     title: 'cupom gerado com sucesso!',
                      html: response,
                      confirmButtonText: 'OK'
                   }).then((result) => {
-
                      if (result.isConfirmed) {
-
-                        Swal.close();
+                        window.onbeforeunload = function() {
+                           window.opener.location.href =
+                              "https://www.pneuscacique.com.br/finalizar-compra";
+                        };
                         window.close();
                      }
                   });
-
                }
-
             },
             error: function(xhr, status, error) {
-
                console.error(error);
             }
          });
-      });
 
+      });
+      var nomeProduto = "<?php echo $nome_produto; ?>";
+
+      function sendButtonClickData(buttonId) {
+         $.ajax({
+            url: "add_count_popup.php",
+            method: "POST",
+            data: {
+               produto: nomeProduto,
+               button_clicked: buttonId
+            },
+            success: function(response) {
+               // Faça algo se necessário com a resposta do servidor
+               console.log(response);
+            },
+            error: function(xhr, status, error) {
+               console.error(error);
+            }
+         });
+      }
 
       document.getElementById("continue-atendimento-link").addEventListener("click", function(e) {
          e.preventDefault();
