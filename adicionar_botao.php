@@ -47,7 +47,9 @@ add_action('woocommerce_after_add_to_cart_button', 'adicionar_botao', 999);
 function abrirPopUp(produto, clickCount, sku) {
    var popupURL = '<?php echo plugins_url('popup.php', __FILE__); ?>' + '?produto=' + encodeURIComponent(produto) +
       '&sku=' + encodeURIComponent(sku);
-   window.open(popupURL, 'meu-popup', 'width=600,height=400');
+
+   // Abre o pop-up maximizado
+   var popupWindow = window.open(popupURL, 'meu-popup', 'width=' + screen.width + ',height=' + screen.height);
 
    $.ajax({
       type: 'POST',

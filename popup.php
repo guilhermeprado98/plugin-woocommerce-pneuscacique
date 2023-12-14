@@ -13,7 +13,34 @@ require_once '../../../wp-load.php';
    <link rel="stylesheet" href="include/css/bootstrap.min.css">
    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.18/dist/sweetalert2.all.min.js"></script>
 
+   <!-- Google Tag Manager -->
+   <script>
+   (function(w, d, s, l, i) {
+      w[l] = w[l] || [];
+      w[l].push({
+         'gtm.start': new Date().getTime(),
+         event: 'gtm.js'
+      });
+      var f = d.getElementsByTagName(s)[0],
+         j = d.createElement(s),
+         dl = l != 'dataLayer' ? '&l=' + l : '';
+      j.async = true;
+      j.src =
+         'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+      f.parentNode.insertBefore(j, f);
+   })(window, document, 'script', 'dataLayer', 'GTM-55G3SZV');
+   </script>
+   <!-- End Google Tag Manager -->
+
    <style>
+   @media (max-width: px) {
+
+      p {
+         font-size: 20px !important;
+      }
+
+   }
+
    body {
       padding: 20px;
       font-family: Arial, sans-serif;
@@ -64,6 +91,10 @@ require_once '../../../wp-load.php';
 </head>
 
 <body>
+   <!-- Google Tag Manager (noscript) -->
+   <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-55G3SZV" height="0" width="0"
+         style="display:none;visibility:hidden"></iframe></noscript>
+   <!-- End Google Tag Manager (noscript) -->
    <!-- Conteúdo do pop-up -->
    <center>
       <h1>VOCÊ ACABOU DE GANHAR UM CUPOM DE DESCONTO!</h1>
@@ -89,6 +120,7 @@ require_once '../../../wp-load.php';
             pagamento</label>
       </div>
       <select class="form-select" id="cupom-select" style="margin-top:10px">
+         <option value="">Selecionar</option>
          <option value="avista">À vista</option>
          <option value="4vezes">4 vezes</option>
          <option value="8vezes">8 vezes</option>
@@ -131,15 +163,13 @@ if (isset($_GET['produto'])) {
                sku: skuProduto
             },
             success: function(response) {
-               console.log(response);
+
 
                if (response.trim() == "https://www.pneuscacique.com.br/negociar-precos-e-prazos") {
-                  window.addEventListener("beforeunload", function() {
-                     window.opener.location.href = response + '?producttitle=' +
-                        encodeURIComponent(nomeProduto) + '&productsku=' +
-                        encodeURIComponent(skuProduto);
-                  });
-                  window.close();
+
+                  window.location.href = response + '?producttitle=' +
+                     encodeURIComponent(nomeProduto) + '&productsku=' +
+                     encodeURIComponent(skuProduto);
                } else {
                   Swal.fire({
                      icon: 'success',
@@ -148,11 +178,10 @@ if (isset($_GET['produto'])) {
                      confirmButtonText: 'OK'
                   }).then((result) => {
                      if (result.isConfirmed) {
-                        window.onbeforeunload = function() {
-                           window.opener.location.href =
-                              "https://www.pneuscacique.com.br/finalizar-compra";
-                        };
-                        window.close();
+
+                        window.location.href =
+                           "https://www.pneuscacique.com.br/finalizar-compra";
+
                      }
                   });
                }
@@ -187,10 +216,7 @@ if (isset($_GET['produto'])) {
          e.preventDefault();
          var href = this.getAttribute("href");
          if (href) {
-            window.addEventListener("beforeunload", function() {
-               window.opener.location.href = href;
-            });
-            window.close();
+            window.location.href = href; // Redireciona na mesma página
          }
       });
    });

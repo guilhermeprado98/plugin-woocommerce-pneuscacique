@@ -2,9 +2,14 @@
 /*
 Plugin Name: CUPOM Pneus Cacique
 Description: Personalizações de CUPOM de desconto e Relatório de Vendas.
-Version: 1.0
+Version: 2.0
 Author: Guilherme Prado
  */
+
+?>
+
+
+<?php
 
 function include_bootstrap()
 {
@@ -179,6 +184,54 @@ function obter_quantidade_negociacoes_produto($product_name)
     return $result;
 }
 
+function vendas_cupom_last_mounth($sku)
+{
+
+    global $wpdb;
+
+    $cupom_name = 'compre-agora-' . $sku . '';
+
+    $result = $wpdb->get_results(
+        $wpdb->prepare(
+            "SELECT pc.post_title AS coupon_name,
+            pc.post_excerpt AS coupon_description,
+            Max(CASE WHEN pmc.meta_key = 'discount_type'      AND  pc.`ID` = pmc.`post_id` THEN pmc.`meta_value` END) AS discount_type,
+            Max(CASE WHEN pmc.meta_key = 'coupon_amount'      AND  pc.`ID` = pmc.`post_id` THEN pmc.`meta_value` END) AS coupon_amount,
+            Max(CASE WHEN pmc.meta_key = 'product_ids'        AND  pc.`ID` = pmc.`post_id` THEN pmc.`meta_value` END) AS product_ids,
+            Max(CASE WHEN pmc.meta_key = 'product_categories' AND  pc.`ID` = pmc.`post_id` THEN pmc.`meta_value` END) AS product_categories,
+            Max(CASE WHEN pmc.meta_key = 'customer_email'     AND  pc.`ID` = pmc.`post_id` THEN pmc.`meta_value` END) AS customer_email,
+            Max(CASE WHEN pmc.meta_key = 'usage_limit'        AND  pc.`ID` = pmc.`post_id` THEN pmc.`meta_value` END) AS usage_limit,
+            Max(CASE WHEN pmc.meta_key = 'usage_count'        AND  pc.`ID` = pmc.`post_id` THEN pmc.`meta_value` END) AS total_usaged,
+            po.ID AS order_id,
+            MAX(CASE WHEN pmo.meta_key = '_billing_email'      AND po.ID = pmo.post_id THEN pmo.meta_value END) AS billing_email,
+            MAX(CASE WHEN pmo.meta_key = '_billing_first_name' AND po.ID = pmo.post_id THEN pmo.meta_value END) AS billing_first_name,
+            MAX(CASE WHEN pmo.meta_key = '_billing_last_name'  AND po.ID = pmo.post_id THEN pmo.meta_value END) AS billing_last_name,
+            MAX(CASE WHEN pmo.meta_key = '_order_total'        AND po.ID = pmo.post_id THEN pmo.meta_value END) AS order_total
+     FROM `wp_posts` AS pc
+     INNER JOIN `wp_postmeta` AS pmc ON  pc.`ID` = pmc.`post_id`
+     INNER JOIN `wp_woocommerce_order_items` AS woi ON pc.post_title = woi.order_item_name
+         AND woi.order_item_type = 'coupon'
+     INNER JOIN `wp_posts` AS po ON woi.order_id = po.ID
+         AND po.post_type = 'shop_order'
+         AND po.post_status IN ('wc-completed', 'wc-processing', 'wc-refunded', 'wc-retirar-na-loja')
+     INNER JOIN `wp_postmeta` AS pmo ON po.ID = pmo.post_id
+     WHERE pc.post_type = 'shop_coupon'
+     AND pc.post_title LIKE %s
+     GROUP BY pc.post_title,
+              pc.post_excerpt,
+              po.ID
+     ORDER BY po.ID DESC
+     ",
+            '%' . $cupom_name . '%'
+        )
+    );
+
+    $num_rows = count($result);
+
+    return $num_rows;
+
+}
+
 function exibir_pagina_relatorio_produtos()
 {
     if (isset($_GET['pesquisar_produtos'])) {
@@ -203,10 +256,8 @@ function exibir_pagina_relatorio_produtos()
     );
 
     $query = new WP_Query($args);
-    echo '<h2>Relatório de Produtos (Pesquisas x Vendas x Negociação)</h2>';
-    echo '<h6>Este relatório demonstra a quantidade de vezes em que o produto foi procurado pelo cliente (campo Pesquisas), quantas vendas foram concluídas (campo Vendas), a quantidade de negociações realizadas (campo Negociação) e a relação de porcentagem Vendas/Pesquisas e Negociação/Pesquisas (campo Participação Vendas x Pesquisas e Participação Negociação x Pesquisas).</h6>';
 
-    echo '<form method="get" action="">';
+    echo '<form method="get" action="" style="margin-top: 20px;">';
     echo '<input type="hidden" name="page" value="pneus-cacique">';
     echo '<input type="text" name="pesquisar_produtos" placeholder="Pesquisar por nome..." style="margin-right:10px"; value="' . esc_attr($search_query) . '">';
     echo '<input type="submit" style="margin-bottom: 10px; margin-right: 10px" name="atualizar_relatorio" value="Atualizar Relatório" class="btn btn-primary">';
@@ -224,6 +275,7 @@ function exibir_pagina_relatorio_produtos()
     echo '<th scope="col">Participação Negociação x Pesquisas</th>';
     echo '<th scope="col">Geraram CUPOM</th>';
     echo '<th scope="col">Continuaram atendimento</th>';
+    echo '<th scope="col">Vendas Cupom (30 dias)</th>';
     echo '</tr>';
     echo '</thead>';
     echo '<tbody>';
@@ -306,6 +358,10 @@ function exibir_pagina_relatorio_produtos()
                 WHERE produto = %s
             ", $product_name)
         );
+
+        $product = wc_get_product($product_id);
+        $sku = $product->get_sku();
+        $count_vendas_cupom_last_30_day = vendas_cupom_last_mounth($sku);
 
         echo '<tr>';
         echo '<td>' . get_the_title() . '</td>';
